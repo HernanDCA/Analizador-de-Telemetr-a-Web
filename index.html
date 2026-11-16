@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analizador de Telemetría Web</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 650px;
+      margin: 30px auto;
+      padding: 20px;
+      background-color: #f8fafc;
+      color: #334155;
+    }
+    .card {
+      background: white;
+      padding: 20px 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin-top: 0;
+      color: #0f172a;
+      font-size: 1.25rem;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    /* Estilo para la lista de selección múltiple */
+    select[multiple] {
+      height: 130px;
+    }
+    .help-text {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .checkbox-group label {
+      margin-bottom: 0;
+      font-weight: normal;
+    }
+    button {
+      background-color: #0284c7;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #0369a1;
+    }
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .tag {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .contingency-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-family: monospace;
+    }
+    .contingency-table th, .contingency-table td {
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      text-align: center;
+    }
+    .contingency-table th {
+      background-color: #f1f5f9;
+    }
+    pre {
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+    ul.historial-list {
+      list-style-type: none;
+      padding: 0;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    ul.historial-list li {
+      padding: 8px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.9rem;
+      font-family: monospace;
+    }
+    .caida-true {
+      color: #dc2626;
+      font-weight: bold;
+    }
+    .caida-false {
+      color: #16a34a;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Formulario de Registro con Selección Múltiple -->
+  <div class="card">
+    <h2>1. Registrar Nueva Sesión de Telemetría</h2>
+    <form id="formSesion">
+      <div class="form-group">
+        <label for="modulosSelect">Módulos Cargados:</label>
+        <!-- Elemento SELECT con atributo MULTIPLE -->
+        <select id="modulosSelect" multiple required>
+          <option value="auth">auth</option>
+          <option value="pagos">pagos</option>
+          <option value="perfil">perfil</option>
+          <option value="reportes">reportes</option>
+          <option value="notificaciones">notificaciones</option>
+          <option value="dashboard">dashboard</option>
+        </select>
+        <div class="help-text">Mantén presionado <strong>Ctrl</strong> (o <strong>Cmd</strong> en Mac) para seleccionar varios módulos.</div>
+      </div>
+      <div class="form-group checkbox-group">
+        <input type="checkbox" id="caidaInput">
+        <label for="caidaInput">¿Ocurrió una caída del sistema (Error 500)?</label>
+      </div>
+      <button type="submit">Agregar al Historial</button>
+    </form>
+  </div>
+
+  <!-- 2. Diagnóstico de Módulos y Contingencia -->
+  <div class="card">
+    <h2>2. Diagnóstico de Módulo</h2>
+    <div class="form-group">
+      <label for="selectModulo">Selecciona un módulo para analizar:</label>
+      <select id="selectModulo">
+        <option value="">-- Carga un módulo para analizar --</option>
+      </select>
+    </div>
+
+    <h3>Módulos Únicos Detectados:</h3>
+    <div id="contenedorModulosUnicos" class="tag-container">Ninguno detectado.</div>
+
+    <h3>Tabla de Contingencia 2x2 (Resultado Objeto):</h3>
+    <pre id="resultadoObjeto">{ }</pre>
+
+    <table class="contingency-table">
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Sin Módulo</th>
+          <th>Con Módulo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Sin Caída</strong></td>
+          <td id="sinModSinCaida">0</td>
+          <td id="conModSinCaida">0</td>
+        </tr>
+        <tr>
+          <td><strong>Con Caída</strong></td>
+          <td id="sinModConCaida">0</td>
+          <td id="conModConCaida">0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3. Visualizador del Historial Servidor -->
+  <div class="card">
+    <h2>3. Historial Completo del Servidor</h2>
+    <ul id="listaHistorial" class="historial-list"></ul>
+  </div>
+
+  <!-- Script independiente JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
